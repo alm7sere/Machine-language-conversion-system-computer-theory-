@@ -1,0 +1,108 @@
+class NFA:
+    def __init__(self, states, alphabet, transitions, start_state, accept_states):
+        self.states = states
+        self.alphabet = alphabet
+        self.transitions = transitions
+        self.start_state = start_state
+        self.accept_states = accept_states
+
+    def epsilon_closure(self, states):
+        closure = set(states)
+        stack = list(states)
+
+        while stack:
+            state = stack.pop()
+            if ('', state) in self.transitions:
+                for next_state in self.transitions[('', state)]:
+                    if next_state not in closure:
+                        closure.add(next_state)
+                        stack.append(next_state)
+        return frozenset(closure)
+
+    def move(self, states, symbol):
+        moves = set()
+        for state in states:
+            if (symbol, state) in self.transitions:
+                moves.update(self.transitions[(symbol, state)])
+        return frozenset(moves)
+
+    def simulate(self, input_string):
+        current_states = self.epsilon_closure({self.start_state})
+        for symbol in input_string:
+            current_states = self.epsilon_closure(self.move(current_states, symbol))
+        return bool(current_states.intersection(self.accept_states))
+
+
+def powerset(states):
+    result = []
+    for i in range(1 << len(states)):
+        result.append(frozenset({states[j] for j in range(len(states)) if (i & (1 << j)) != 0}))
+    return result
+
+
+def nfa_to_dfa(nfa):
+    dfa_states = []
+    dfa_transitions = {}
+    dfa_accept_states = []
+
+    start_state = nfa.epsilon_closure({nfa.start_state})
+    queue = [start_state]
+    dfa_states.append(start_state)
+    while queue:
+        current_state = queue.pop(0)
+        for symbol in nfa.alphabet:
+            next_state = nfa.epsilon_closure(nfa.move(current_state, symbol))
+            if next_state not in dfa_states:
+                dfa_states.append(next_state)
+                queue.append(next_state)
+            dfa_transitions[(current_state, symbol)] = next_state
+
+    for state in dfa_states:
+        if state.intersection(nfa.accept_states):
+            dfa_accept_states.append(state)
+
+    return DFA(dfa_states, nfa.alphabet, dfa_transitions, start_state, dfa_accept_states)
+
+
+class DFA:
+    def __init__(self, states, alphabet, transitions, start_state, accept_states):
+        self.states = states
+        self.alphabet = alphabet
+        self.transitions = transitions
+        self.start_state = start_state
+        self.accept_states = accept_states
+
+    def simulate(self, input_string):
+        current_state = self.start_state
+        for symbol in input_string:
+            current_state = self.transitions[(current_state, symbol)]
+        return current_state in self.accept_states
+
+
+# Getting NFA details from user input
+states = input("Enter NFA states separated by commas: ").strip().split(',')
+alphabet = input("Enter NFA alphabet separated by commas: ").strip().split(',')
+start_state = input("Enter NFA start state: ").strip()
+accept_states = input("Enter NFA accept states separated by commas: ").strip().split(',')
+
+transitions = {}
+print("Enter transitions in the format: (state, symbol): next_state (Enter 'done' to finish)")
+while True:
+    transition = input().strip()
+    if transition == 'done':
+        break
+    state, symbol, next_state = transition.split(',')
+    transitions[(symbol, state)] = {next_state}
+
+nfa = NFA(set(states), set(alphabet), transitions, start_state, set(accept_states))
+
+# Convert NFA to DFA
+dfa = nfa_to_dfa(nfa)
+print("DFA states:", dfa.states)
+print("DFA transitions:", dfa.transitions)
+print("DFA accept states:", dfa.accept_states)
+
+# Simulate DFA with user input
+input_str = input("Enter input string to simulate DFA: ")
+print("Input:", input_str)
+print("DFA accepts?", dfa.simulate(input_str))

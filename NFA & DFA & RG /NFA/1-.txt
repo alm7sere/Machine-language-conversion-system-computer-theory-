@@ -1,0 +1,257 @@
+class NFA:
+    def __init__(self, states, alphabet, transitions, start_state, accept_states):
+        self.states = states
+        self.alphabet = alphabet
+        self.transitions = transitions
+        self.start_state = start_state
+        self.accept_states = set(accept_states)  # Convert to set
+
+    def epsilon_closure(self, state, visited=None):
+        if visited is None:
+            visited = set()
+        visited.add(state)
+        closure = set()
+        closure.add(state)
+        transitions = self.transitions.get((state, '@'), [])
+        for next_state in transitions:
+            if next_state not in visited:
+                closure.update(self.epsilon_closure(next_state, visited))
+        return closure
+
+    def move(self, states, symbol):
+        result = set()
+        for state in states:
+            transitions = self.transitions.get((state, symbol), [])
+            for next_state in transitions:
+                result.update(self.epsilon_closure(next_state))
+        return result
+
+    def convert_to_dfa(self):
+        dfa_transitions = {}
+        dfa_start_state = frozenset(self.epsilon_closure(self.start_state))
+        dfa_states = {dfa_start_state}
+        dfa_accept_states = set()
+        queue = [dfa_start_state]
+
+        while queue:
+            current_state = queue.pop(0)
+            for symbol in self.alphabet:
+                next_state = frozenset(self.move(current_state, symbol))
+                if next_state:
+                    dfa_transitions[(current_state, symbol)] = next_state
+                    if next_state not in dfa_states:
+                        dfa_states.add(next_state)
+                        queue.append(next_state)
+                    if self.accept_states.intersection(set(next_state)):
+                        dfa_accept_states.add(next_state)
+
+        return DFA(dfa_states, self.alphabet, dfa_transitions, dfa_start_state, dfa_accept_states)
+
+    def print_table(self, name):
+        print(name + ":")
+        for state in sorted(self.states, key=lambda s: sorted(list(s))):
+            if state == '':
+                continue
+            for symbol in self.alphabet:
+                next_state = self.transitions.get((state, symbol), [])
+                next_state = next_state if next_state else []
+                if '@' in self.alphabet:
+                    lambda_transitions = self.transitions.get((state, '@'), [])
+                    next_state += lambda_transitions
+                if next_state:
+                    print("{}==={}===>{}".format(state, symbol, next_state))
+        print("Accept states in {}: {}".format(name, self.accept_states))
+
+
+class DFA:
+    def __init__(self, states, alphabet, transitions, start_state, accept_states):
+        self.states = states
+        self.alphabet = alphabet
+        self.transitions = transitions
+        self.start_state = start_state
+        self.accept_states = accept_states
+
+    def print_table(self, name):
+        print(name + ":")
+        for state in sorted(self.states, key=lambda s: sorted(list(s))):
+            for symbol in self.alphabet:
+                next_state = self.transitions.get((state, symbol), "Trapstate")
+                print("{}==={}===>{}".format(state, symbol, next_state))
+        print("Accept states in {}: {}".format(name, self.accept_states))
+
+
+def get_input():
+    states = input("Enter states separated by commas: ").split(',')
+    alphabet = input("Enter alphabet separated by commas: ").split(',')
+    transitions = {}
+    print("Enter transitions (press Enter when done):")
+    while True:
+        transition = input("From state, input symbol, To states (comma-separated): ")
+        if not transition:
+            break
+        from_state, symbol, to_states = transition.split(',')
+        to_states = to_states.split(',')
+        transitions[(from_state.strip(), symbol.strip())] = to_states
+    start_state = input("Enter start state: ")
+    accept_states = input("Enter accept states separated by commas: ").split(',')
+    return states, alphabet, transitions, start_state, accept_states
+
+
+def main():
+    nfa_states, nfa_alphabet, nfa_transitions, nfa_start_state, nfa_accept_states = get_input()
+    nfa = NFA(nfa_states, nfa_alphabet, nfa_transitions, nfa_start_state, nfa_accept_states)
+    dfa = nfa.convert_to_dfa()
+
+    nfa.print_table("NFATable")
+    dfa.print_table("DFATable")
+
+
+if __name__ == "__main__":
+    main()
+----------------------------------------------------------------------------------------------------------------------------------
+
+
+
+class NFA:
+    def __init__(self, states, alphabet, transitions, start_state, accept_states):
+        self.states = states
+        self.alphabet = alphabet
+        self.transitions = transitions
+        self.start_state = start_state
+        self.accept_states = set(accept_states)  # Convert to set
+
+    def epsilon_closure(self, state, visited=None):
+        if visited is None:
+            visited = set()
+        visited.add(state)
+        closure = set()
+        closure.add(state)
+        transitions = self.transitions.get((state, '@'), [])
+        for next_state in transitions:
+            if next_state not in visited:
+                closure.update(self.epsilon_closure(next_state, visited))
+        return closure
+
+    def move(self, states, symbol):
+        result = set()
+        for state in states:
+            transitions = self.transitions.get((state, symbol), [])
+            for next_state in transitions:
+                result.update(self.epsilon_closure(next_state))
+        return result
+
+    def convert_to_dfa(self):
+        dfa_transitions = {}
+        dfa_start_state = frozenset(self.epsilon_closure(self.start_state))
+        dfa_states = {dfa_start_state}
+        dfa_accept_states = set()
+        queue = [dfa_start_state]
+
+        while queue:
+            current_state = queue.pop(0)
+            for symbol in self.alphabet:
+                next_state = frozenset(self.move(current_state, symbol))
+                if next_state:
+                    dfa_transitions[(current_state, symbol)] = next_state
+                    if next_state not in dfa_states:
+                        dfa_states.add(next_state)
+                        queue.append(next_state)
+                    if self.accept_states.intersection(set(next_state)):
+                        dfa_accept_states.add(next_state)
+
+        return DFA(dfa_states, self.alphabet, dfa_transitions, dfa_start_state, dfa_accept_states)
+
+    def print_table(self, name):
+        print(name + ":")
+        for state in sorted(self.states, key=lambda s: sorted(list(s))):
+            if state == '':
+                continue
+            for symbol in self.alphabet:
+                next_state = self.transitions.get((state, symbol), [])
+                next_state = next_state if next_state else []
+                if '@' in self.alphabet:
+                    lambda_transitions = self.transitions.get((state, '@'), [])
+                    next_state += lambda_transitions
+                if next_state:
+                    print("{}==={}===>{}".format(state, symbol, next_state))
+        print("Accept states in {}: {}".format(name, self.accept_states))
+
+
+class DFA:
+    def __init__(self, states, alphabet, transitions, start_state, accept_states):
+        self.states = states
+        self.alphabet = alphabet
+        self.transitions = transitions
+        self.start_state = start_state
+        self.accept_states = accept_states
+
+    def print_table(self, name):
+        print(name + ":")
+        for state in sorted(self.states, key=lambda s: sorted(list(s))):
+            for symbol in self.alphabet:
+                next_state = self.transitions.get((state, symbol), "Trapstate")
+                print("{}==={}===>{}".format(state, symbol, next_state))
+        print("Accept states in {}: {}".format(name, self.accept_states))
+
+
+def get_input():
+    states = input("Enter states separated by commas: ").split(',')
+    alphabet = input("Enter alphabet separated by commas: ").split(',')
+    transitions = {}
+    print("Enter transitions (press Enter when done):")
+    while True:
+        transition = input("From state, input symbol, To states (comma-separated): ")
+        if not transition:
+            break
+        from_state, symbol, to_states = transition.split(',')
+        to_states = to_states.split(',')
+        transitions[(from_state.strip(), symbol.strip())] = to_states
+    start_state = input("Enter start state: ")
+    accept_states = input("Enter accept states separated by commas: ").split(',')
+    return states, alphabet, transitions, start_state, accept_states
+
+
+def main():
+    nfa_states, nfa_alphabet, nfa_transitions, nfa_start_state, nfa_accept_states = get_input()
+    nfa = NFA(nfa_states, nfa_alphabet, nfa_transitions, nfa_start_state, nfa_accept_states)
+    dfa = nfa.convert_to_dfa()
+
+    nfa.print_table("NFATable")
+    dfa.print_table("DFATable")
+
+
+if __name__ == "__main__":
+    main()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
